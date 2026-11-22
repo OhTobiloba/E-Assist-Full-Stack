@@ -34,5 +34,5 @@ export function startJobs() {
   };
 
   setTimeout(run, 15_000);
-  return setInterval(run, 2 * 60 * 1000);
+  return setInterval(run, 10 * 60 * 1000);
 }
