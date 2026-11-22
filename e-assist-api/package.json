@@ -1,0 +1,42 @@
+{
+  "name": "e-assist-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "E·Assist backend: Express + Prisma (PostgreSQL) + Socket.io",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "postinstall": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "node prisma/seed.js",
+    "db:studio": "prisma studio",
+    "cli": "node scripts/admin-cli.js"
+  },
+  "engines": { "node": "^22.18.0 || >=24.12.0" },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.11.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.5",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.12.1",
+    "multer": "^2.5.0",
+    "socket.io": "^4.8.4",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14",
+    "prisma": "^7.10.1"
+  },
+  "overrides": {
+    "effect": "^3.22.1",
+    "minimatch": "^11.0.1"
+  }
+}
