@@ -4,7 +4,8 @@
 export const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== 'false';
 
 // INPUT NEEDED (when USE_MOCK=false): set these in .env.local / Vercel env vars.
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const configuredApiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace(/\/+$/, '');
+export const API_URL = configuredApiUrl.endsWith('/api') ? configuredApiUrl : `${configuredApiUrl}/api`;
 export const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
 
 // Shown on the Create Task screen (matches the prototype: 15%).
