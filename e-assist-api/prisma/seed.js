@@ -1,9 +1,13 @@
 // Demo data. Run:  npm run db:seed   (safe to run more than once)
 import 'dotenv/config';
 import bcrypt from 'bcryptjs';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client.ts';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+const prisma = new PrismaClient({ adapter });
 const H = 3600e3;
 
 async function upsertUser(phone, name, extra = {}) {
@@ -48,4 +52,8 @@ async function main() {
   console.log('Seeded. Demo login phone: 0803 000 0001 (use OTP login).');
 }
 
-main().finally(() => prisma.$disconnect());
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+})
+  .finally(() => prisma.$disconnect());
