@@ -1,16 +1,221 @@
-// E·Assist database schema (PostgreSQL). Phase 0: all tables from the backlog
-// (Users, Tasks, Wallets, Transactions, Ratings, Disputes) + supporting tables.
-// Money is stored as whole naira (Int). Convert to kobo (x100) only when talking to Paystack.
-
 generator client {
-  provider               = "prisma-client"
-  output                 = "../src/generated/prisma"
-  moduleFormat           = "esm"
-  importFileExtension    = "ts"
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  importFileExtension = "ts"
+  moduleFormat        = "esm"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model User {
+  id               String          @id @default(cuid())
+  phone            String          @unique
+  name             String
+  email            String?
+  passwordHash     String?
+  photoUrl         String?
+  homeArea         String?
+  roles            Role[]
+  activeRole       Role?
+  phoneVerified    Boolean         @default(false)
+  profileComplete  Boolean         @default(false)
+  kycStatus        KycStatus       @default(NONE)
+  status           UserStatus      @default(ACTIVE)
+  ratingAvg        Float           @default(0)
+  ratingCount      Int             @default(0)
+  cancellations    Int             @default(0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  bankAccounts     BankAccount[]
+  disputesRaised   Dispute[]
+  kycSubmissions   KycSubmission[]
+  messages         Message[]
+  notifications    Notification[]
+  ratingsGiven     Rating[]        @relation("RatingGiver")
+  ratingsReceived  Rating[]        @relation("RatingReceiver")
+  refreshTokens    RefreshToken[]
+  tasksAsAssistant Task[]          @relation("AssistantTasks")
+  tasksAsCustomer  Task[]          @relation("CustomerTasks")
+  transactions     Transaction[]
+  wallet           Wallet?
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Otp {
+  id         String    @id @default(cuid())
+  phone      String
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([phone, createdAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model KycSubmission {
+  id              String    @id @default(cuid())
+  userId          String
+  idDocPublicId   String?
+  selfiePublicId  String?
+  status          KycStatus @default(PENDING)
+  reviewNote      String?
+  reviewedByAdmin String?
+  createdAt       DateTime  @default(now())
+  reviewedAt      DateTime?
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Task {
+  id            String        @id @default(cuid())
+  customerId    String
+  assistantId   String?
+  title         String
+  description   String        @default("")
+  category      String
+  budget        Int
+  pickup        String
+  dropoff       String
+  lat           Float?
+  lng           Float?
+  deadline      DateTime
+  photoUrl      String?
+  proofUrl      String?
+  status        TaskStatus    @default(OPEN)
+  escrowHeld    Boolean       @default(false)
+  acceptedAt    DateTime?
+  completedAt   DateTime?
+  autoReleaseAt DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  dispute       Dispute?
+  messages      Message[]
+  ratings       Rating[]
+  assistant     User?         @relation("AssistantTasks", fields: [assistantId], references: [id])
+  customer      User          @relation("CustomerTasks", fields: [customerId], references: [id])
+  transactions  Transaction[]
+
+  @@index([status, createdAt])
+  @@index([customerId])
+  @@index([assistantId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  taskId    String
+  senderId  String
+  text      String
+  createdAt DateTime @default(now())
+  sender    User     @relation(fields: [senderId], references: [id])
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  taskId    String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  balance   Int      @default(0)
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Transaction {
+  id         String   @id @default(cuid())
+  userId     String
+  taskId     String?
+  type       TxType
+  status     TxStatus @default(SUCCESS)
+  amount     Int
+  commission Int      @default(0)
+  reference  String?  @unique
+  meta       Json?
+  createdAt  DateTime @default(now())
+  task       Task?    @relation(fields: [taskId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+}
+
+model BankAccount {
+  id            String   @id @default(cuid())
+  userId        String
+  bankCode      String
+  bankName      String
+  accountNumber String
+  accountName   String
+  recipientCode String?
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, accountNumber, bankCode])
+}
+
+model Rating {
+  id         String   @id @default(cuid())
+  taskId     String
+  giverId    String
+  receiverId String
+  stars      Int
+  comment    String?
+  createdAt  DateTime @default(now())
+  giver      User     @relation("RatingGiver", fields: [giverId], references: [id])
+  receiver   User     @relation("RatingReceiver", fields: [receiverId], references: [id])
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, giverId])
+}
+
+model Dispute {
+  id              String          @id @default(cuid())
+  taskId          String          @unique
+  raisedById      String
+  reason          String
+  details         String          @default("")
+  status          DisputeStatus   @default(OPEN)
+  outcome         DisputeOutcome?
+  resolvedByAdmin String?
+  createdAt       DateTime        @default(now())
+  resolvedAt      DateTime?
+  raisedBy        User            @relation(fields: [raisedById], references: [id])
+  task            Task            @relation(fields: [taskId], references: [id])
 }
 
 enum Role {
@@ -63,215 +268,4 @@ enum DisputeOutcome {
   RELEASE
   REFUND
   SPLIT
-}
-
-model User {
-  id             String     @id @default(cuid())
-  phone          String     @unique
-  name           String
-  email          String?
-  passwordHash   String?
-  photoUrl       String?
-  homeArea       String?
-  roles          Role[]
-  activeRole     Role?
-  phoneVerified  Boolean    @default(false)
-  profileComplete Boolean   @default(false)
-  kycStatus      KycStatus  @default(NONE)
-  status         UserStatus @default(ACTIVE)
-  ratingAvg      Float      @default(0)
-  ratingCount    Int        @default(0)
-  cancellations  Int        @default(0)
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-
-  wallet          Wallet?
-  refreshTokens   RefreshToken[]
-  kycSubmissions  KycSubmission[]
-  tasksAsCustomer Task[]         @relation("CustomerTasks")
-  tasksAsAssistant Task[]        @relation("AssistantTasks")
-  messages        Message[]
-  notifications   Notification[]
-  transactions    Transaction[]
-  bankAccounts    BankAccount[]
-  ratingsGiven    Rating[]       @relation("RatingGiver")
-  ratingsReceived Rating[]       @relation("RatingReceiver")
-  disputesRaised  Dispute[]
-}
-
-model Admin {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  passwordHash String
-  createdAt    DateTime @default(now())
-}
-
-model Otp {
-  id         String    @id @default(cuid())
-  phone      String
-  codeHash   String
-  expiresAt  DateTime
-  attempts   Int       @default(0)
-  consumedAt DateTime?
-  createdAt  DateTime  @default(now())
-
-  @@index([phone, createdAt])
-}
-
-model RefreshToken {
-  id        String    @id @default(cuid())
-  userId    String
-  tokenHash String    @unique
-  expiresAt DateTime
-  revokedAt DateTime?
-  createdAt DateTime  @default(now())
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
-
-model KycSubmission {
-  id               String    @id @default(cuid())
-  userId           String
-  idDocPublicId    String?
-  selfiePublicId   String?
-  status           KycStatus @default(PENDING)
-  reviewNote       String?
-  reviewedByAdmin  String?
-  createdAt        DateTime  @default(now())
-  reviewedAt       DateTime?
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([status])
-}
-
-model Task {
-  id            String     @id @default(cuid())
-  customerId    String
-  assistantId   String?
-  title         String
-  description   String     @default("")
-  category      String
-  budget        Int
-  pickup        String
-  dropoff       String
-  lat           Float?
-  lng           Float?
-  deadline      DateTime
-  photoUrl      String?
-  proofUrl      String?
-  status        TaskStatus @default(OPEN)
-  escrowHeld    Boolean    @default(false)
-  acceptedAt    DateTime?
-  completedAt   DateTime?
-  autoReleaseAt DateTime?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-
-  customer      User          @relation("CustomerTasks", fields: [customerId], references: [id])
-  assistant     User?         @relation("AssistantTasks", fields: [assistantId], references: [id])
-  messages      Message[]
-  transactions  Transaction[]
-  ratings       Rating[]
-  dispute       Dispute?
-
-  @@index([status, createdAt])
-  @@index([customerId])
-  @@index([assistantId])
-}
-
-model Message {
-  id        String   @id @default(cuid())
-  taskId    String
-  senderId  String
-  text      String
-  createdAt DateTime @default(now())
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  sender    User     @relation(fields: [senderId], references: [id])
-
-  @@index([taskId, createdAt])
-}
-
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  title     String
-  body      String
-  taskId    String?
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt])
-}
-
-model Wallet {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  balance   Int      @default(0)
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model Transaction {
-  id         String   @id @default(cuid())
-  userId     String
-  taskId     String?
-  type       TxType
-  status     TxStatus @default(SUCCESS)
-  amount     Int
-  commission Int      @default(0)
-  reference  String?  @unique
-  meta       Json?
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id])
-  task       Task?    @relation(fields: [taskId], references: [id])
-
-  @@index([userId, createdAt])
-}
-
-model BankAccount {
-  id            String   @id @default(cuid())
-  userId        String
-  bankCode      String
-  bankName      String
-  accountNumber String
-  accountName   String
-  recipientCode String?
-  createdAt     DateTime @default(now())
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, accountNumber, bankCode])
-}
-
-model Rating {
-  id         String   @id @default(cuid())
-  taskId     String
-  giverId    String
-  receiverId String
-  stars      Int
-  comment    String?
-  createdAt  DateTime @default(now())
-  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  giver      User     @relation("RatingGiver", fields: [giverId], references: [id])
-  receiver   User     @relation("RatingReceiver", fields: [receiverId], references: [id])
-
-  @@unique([taskId, giverId])
-}
-
-model Dispute {
-  id           String          @id @default(cuid())
-  taskId       String          @unique
-  raisedById   String
-  reason       String
-  details      String          @default("")
-  status       DisputeStatus   @default(OPEN)
-  outcome      DisputeOutcome?
-  resolvedByAdmin String?
-  createdAt    DateTime        @default(now())
-  resolvedAt   DateTime?
-  task         Task            @relation(fields: [taskId], references: [id])
-  raisedBy     User            @relation(fields: [raisedById], references: [id])
 }
