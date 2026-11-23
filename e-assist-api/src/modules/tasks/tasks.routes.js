@@ -36,7 +36,7 @@ const feedSchema = z.object({
 router.post('/tasks', upload.single('photo'), validate(createSchema),
   asyncHandler(async (req, res) => res.status(201).json(await svc.createTask(req.user, req.body, req.file))));
 
-router.get('/tasks', validate(feedSchema, 'query'), asyncHandler(async (req, res) => res.json(await svc.listFeed(req.user, req.query))));
+router.get('/tasks', validate(feedSchema, 'query'), asyncHandler(async (req, res) => res.json(await svc.listFeed(req.user, req.validatedQuery))));
 
 // declared BEFORE /tasks/:id so "mine" isn't treated as an id
 router.get('/tasks/mine', asyncHandler(async (req, res) => {
