@@ -2,24 +2,24 @@
 
 > ⚠️ This code was written and syntax-checked, and the escrow money math was unit-tested, but the full server could not be started in the build environment (no internet to install packages). Expect to fix small things on first run; send me any error text.
 
-## 1. Install on your computer
+<!-- ## 1. Install on your computer
 | Tool | Get it |
 |---|---|
 | Node.js 20 LTS | https://nodejs.org |
 | Git | https://git-scm.com |
-| (Optional) Postman or just `curl` | to test endpoints |
+| (Optional) Postman or just `curl` | to test endpoints | -->
 
 ## 2. Accounts and keys
 
-### A. Database: Neon (free PostgreSQL) **[REQUIRED]**
+<!-- ### A. Database: Neon (free PostgreSQL) **[REQUIRED]**
 1. Sign up at https://neon.tech → **Create project** (any name, region closest to Lagos, e.g. Europe/Frankfurt).
 2. On the project dashboard click **Connect** → copy the **connection string** (turn *off* "Pooled connection" for migrations).
-3. Paste it into `.env` as `DATABASE_URL=...`. (Supabase also works: Project Settings → Database → Direct connection string.)
+3. Paste it into `.env` as `DATABASE_URL=...`. (Supabase also works: Project Settings → Database → Direct connection string.) -->
 
-### B. Cloudinary (free): images **[needed for real uploads; optional in local dev]**
+<!-- ### B. Cloudinary (free): images **[needed for real uploads; optional in local dev]**
 1. Sign up at https://cloudinary.com → Dashboard.
 2. Copy **Cloud name**, **API Key**, **API Secret** into `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.
-3. If left empty, uploads are accepted but not stored (KYC will still work in dev; the admin can't see images). **Required in production.**
+3. If left empty, uploads are accepted but not stored (KYC will still work in dev; the admin can't see images). **Required in production.** -->
 
 ### C. Termii: real SMS OTP **[OPTIONAL now. Needed for real users]**
 1. Sign up at https://termii.com, verify your business/ID, fund a small amount.
@@ -28,28 +28,28 @@
 4. Check Termii's current docs (https://developers.termii.com) if the request format has changed; the call is in `src/services/sms.js`.
 > **Until then, keep `SMS_PROVIDER=console`**: the OTP is printed in the server terminal AND (with `OTP_DEV_ECHO=true`) shown on the app's OTP screen. That is how you test OTP for free.
 
-### D. Hosting the API: Render (free web service) **[for going online]**
-Create a Render account → New **Web Service** → connect the GitHub repo → Build command: `npm install && npx prisma migrate deploy` → Start command: `npm start` → add every variable from the table below. Free instances sleep when idle (first request is slow). Railway/Fly.io are alternatives.
+<!-- ### D. Hosting the API: Render (free web service) **[for going online]**
+Create a Render account → New **Web Service** → connect the GitHub repo → Build command: `npm install && npx prisma migrate deploy` → Start command: `npm start` → add every variable from the table below. Free instances sleep when idle (first request is slow). Railway/Fly.io are alternatives. -->
 
 ### E. Paystack **[Phase 3: not needed yet]**
 Account at https://paystack.com → Settings → API Keys → copy **test** public + secret keys into `PAYSTACK_PUBLIC_KEY` / `PAYSTACK_SECRET_KEY` later. The secret key stays on the server only.
 
 ## 3. First run (local)
-```bash
+<!-- ```bash
 cd e-assist-api
 npm install                      # also runs "prisma generate"
 cp .env.example .env             # Windows: copy .env.example .env
-```
-Open `.env` and fill the **[REQUIRED]** values. Generate the three secrets with:
+``` -->
+<!-- Open `.env` and fill the **[REQUIRED]** values. Generate the three secrets with:
 ```bash
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"   # run 3 times: JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, OTP_PEPPER
-```
-Then create the tables and demo data:
+``` -->
+<!-- Then create the tables and demo data:
 ```bash
 npx prisma migrate dev --name init     # creates tables AND a prisma/migrations folder -> COMMIT that folder to Git
 npm run db:seed                        # demo users + tasks + admin account
 npm run dev                            # http://localhost:4000/api/health
-```
+``` -->
 Quick test (OTP login for the seeded demo user):
 ```bash
 curl -X POST localhost:4000/api/otp/send -H "Content-Type: application/json" -d '{"phone":"08030000001"}'
@@ -58,14 +58,14 @@ curl -X POST localhost:4000/api/otp/verify -H "Content-Type: application/json" -
 ```
 
 ## 4. Connect the frontend
-In `e-assist-web/.env.local`:
+<!-- In `e-assist-web/.env.local`:
 ```
 NEXT_PUBLIC_USE_MOCK=false
 NEXT_PUBLIC_API_URL=http://localhost:4000/api
-NEXT_PUBLIC_SOCKET_URL=http://localhost:4000
+NEXT_PUBLIC_SOCKET_URL=http://localhost:4000 -->
 ```
-Restart `npm run dev`. Sign up with a new number → the OTP screen shows a "Dev mode" box with your code.
-When the frontend is on Vercel, add its URL to `CLIENT_ORIGINS` on the API (comma-separated) and redeploy the API.
+<!-- Restart `npm run dev`. Sign up with a new number → the OTP screen shows a "Dev mode" box with your code.
+When the frontend is on Vercel, add its URL to `CLIENT_ORIGINS` on the API (comma-separated) and redeploy the API. -->
 
 ## 5. Dev helpers (until the admin panel API exists)
 ```bash
